@@ -1,20 +1,28 @@
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
-const bodyParser = require('body-parser');
+const multer = require('multer');
 const app = express();
 
-// Middleware to parse form data and JSON
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
+// Configure multer for form data
+const upload = multer();
 
-// Database connection
 const db = new sqlite3.Database('students.sqlite', (err) => {
     if (err) {
         console.error('Database connection error:', err.message);
     } else {
         console.log('Connected to SQLite database.');
+        db.run(`CREATE TABLE IF NOT EXISTS students (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            firstname TEXT NOT NULL,
+            lastname TEXT NOT NULL,
+            gender TEXT NOT NULL,
+            age TEXT
+        )`);
     }
 });
+
+// Middleware to parse JSON (for GET/DELETE if needed)
+app.use(express.json());
 
 // GET all students
 app.get('/students', (req, res) => {
@@ -34,8 +42,11 @@ app.get('/students', (req, res) => {
 });
 
 // POST a new student
-app.post('/students', (req, res) => {
+app.post('/students', upload.none(), (req, res) => {
     const { firstname, lastname, gender, age } = req.body;
+    if (!firstname || !lastname || !gender || !age) {
+        return res.status(400).send('All fields are required');
+    }
     const sql = 'INSERT INTO students (firstname, lastname, gender, age) VALUES (?, ?, ?, ?)';
     
     db.run(sql, [firstname, lastname, gender, age], function(err) {
@@ -64,9 +75,12 @@ app.get('/student/:id', (req, res) => {
 });
 
 // PUT (update) a student
-app.put('/student/:id', (req, res) => {
+app.put('/student/:id', upload.none(), (req, res) => {
     const id = req.params.id;
     const { firstname, lastname, gender, age } = req.body;
+    if (!firstname || !lastname || !gender || !age) {
+        return res.status(400).send('All fields are required');
+    }
     const sql = 'UPDATE students SET firstname = ?, lastname = ?, gender = ?, age = ? WHERE id = ?';
     
     db.run(sql, [firstname, lastname, gender, age, id], function(err) {
@@ -104,8 +118,7 @@ app.delete('/student/:id', (req, res) => {
     });
 });
 
-// Start server
-const PORT = 8001;
+const PORT = 8000;
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
 });
