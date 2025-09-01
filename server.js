@@ -118,7 +118,7 @@ app.delete('/student/:id', (req, res) => {
     });
 });
 
-const PORT = 8000;
+const PORT = 8001;
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
 });
